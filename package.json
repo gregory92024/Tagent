@@ -1,0 +1,29 @@
+{
+  "name": "kajabi-hubspot-integration",
+  "version": "1.0.0",
+  "description": "Sales automation: Kajabi → HubSpot → Excel",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "schedule": "node scheduler.js"
+  },
+  "keywords": [
+    "kajabi",
+    "hubspot",
+    "automation",
+    "crm"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@hubspot/api-client": "^11.0.0",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "@hubspot/cli": "^7.11.2",
+    "nodemon": "^3.0.0"
+  }
+}
