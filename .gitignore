@@ -15,9 +15,10 @@ ENV/
 node_modules/
 npm-debug.log*
 
-# Excel files (optional - uncomment if you don't want to track them)
-# *.xlsx
-# *.xls
+# Excel files (generated output - do not commit)
+*.xlsx
+*.xls
+sales_data.*
 
 # IDE
 .vscode/

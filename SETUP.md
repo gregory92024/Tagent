@@ -28,23 +28,32 @@ This will install:
 
 All credentials are stored in the `.env` file:
 
-#### Kajabi API
-- **API Key:** Located in Kajabi Settings → Integrations → API
-- **API Secret:** Provided with the API key
+#### Kajabi API (OAuth2)
+- **Client ID (API Key):** Located in Kajabi Settings → Integrations → API
+- **Client Secret (API Secret):** Provided with the API key
+- Uses OAuth2 client credentials flow for authentication
 
 #### HubSpot API
-- **Personal Access Token:**
+- **Personal Access Token (PAT):**
   1. Go to HubSpot Settings
   2. Navigate to Integrations → Private Apps
-  3. Create or access your personal access key
-  4. Copy the token
+  3. Create or access your private app
+  4. Copy the access token (starts with `pat-na1-` or `pat-na2-`)
+
+#### Date Filtering (Optional)
+- **Purchase Cutoff Date:** Only process purchases after this date
+- Format: ISO 8601 (e.g., `2026-01-05T08:00:00Z`)
+- Prevents reprocessing historical data
 
 **Example Configuration:**
 ```
-KAJABI_API_KEY=your_kajabi_api_key_here
-KAJABI_API_SECRET=your_kajabi_api_secret_here
-HUBSPOT_ACCESS_TOKEN=your_hubspot_access_token_here
+KAJABI_API_KEY=your_kajabi_client_id_here
+KAJABI_API_SECRET=your_kajabi_client_secret_here
+HUBSPOT_ACCESS_TOKEN=pat-na2-xxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+PURCHASE_CUTOFF_DATE=2026-01-05T08:00:00Z
 ```
+
+See `.env.example` for a complete template.
 
 ### 3. HubSpot Permissions
 
