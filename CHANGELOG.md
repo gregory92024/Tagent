@@ -9,7 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### To Be Added
 - Date-based filtering to process only new purchases after January 5, 2026 (PST)
-- Improved duplicate contact handling with proper update logic
+
+## [0.2.1] - 2026-01-05
+
+### Fixed
+- Duplicate contact handling now properly updates existing contacts instead of throwing errors
+- Added nested try-catch for 409 conflict resolution
+- Contact search and update now returns the updated contact object correctly
+- Integration no longer fails when processing duplicate customer emails
 
 ## [0.2.0] - 2026-01-05
 

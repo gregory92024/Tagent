@@ -133,24 +133,32 @@ async function upsertHubSpotContact(customerData) {
       return contact;
     } catch (error) {
       if (error.statusCode === 409) {
-        // Contact exists, update it
-        const existingContact = await hubspotClient.crm.contacts.searchApi.doSearch({
-          filterGroups: [{
-            filters: [{
-              propertyName: 'email',
-              operator: 'EQ',
-              value: customerData.email
+        // Contact exists, search for it and update
+        try {
+          const existingContact = await hubspotClient.crm.contacts.searchApi.doSearch({
+            filterGroups: [{
+              filters: [{
+                propertyName: 'email',
+                operator: 'EQ',
+                value: customerData.email
+              }]
             }]
-          }]
-        });
+          });
 
-        if (existingContact.results.length > 0) {
-          const contactId = existingContact.results[0].id;
-          const updated = await hubspotClient.crm.contacts.basicApi.update(contactId, contactData);
-          console.log(`Updated HubSpot contact: ${customerData.email}`);
-          return updated;
+          if (existingContact.results.length > 0) {
+            const contactId = existingContact.results[0].id;
+            const updated = await hubspotClient.crm.contacts.basicApi.update(contactId, contactData);
+            console.log(`Updated HubSpot contact: ${customerData.email}`);
+            return updated;
+          } else {
+            throw new Error(`Contact with email ${customerData.email} not found after 409 conflict`);
+          }
+        } catch (searchError) {
+          console.error(`Error searching/updating contact ${customerData.email}:`, searchError.message);
+          throw searchError;
         }
       }
+      // If it's not a 409 error, throw it
       throw error;
     }
   } catch (error) {
