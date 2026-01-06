@@ -80,12 +80,22 @@ The scheduler will automatically check for new sales every 5 minutes and sync th
 ## Features
 
 ✓ Automated sales synchronization from Kajabi
+✓ OAuth2 authentication for Kajabi API
+✓ JSON:API format support with relationship mapping
 ✓ Smart contact management (creates new, updates existing)
 ✓ Deal creation with contact associations
 ✓ Excel export with formatted data
 ✓ Configurable polling interval
 ✓ Error handling and logging
 ✓ Secure credential management
+
+## Current Status (January 5, 2026)
+
+- ✓ Kajabi API integration working with OAuth2
+- ✓ HubSpot API integration working with Personal Access Token
+- ✓ Excel export functional
+- ⚠ Duplicate contact handling needs improvement (currently in progress)
+- Planned: Date-based filtering for new purchases only
 
 ## Requirements
 

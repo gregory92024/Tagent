@@ -53,14 +53,59 @@ async function fetchKajabiSales() {
     // Get access token first
     const accessToken = await getKajabiAccessToken();
 
-    const response = await axios.get(`${KAJABI_BASE_URL}/v1/purchases`, {
+    const response = await axios.get(`${KAJABI_BASE_URL}/v1/purchases?include=customer,offer`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json'
       }
     });
 
-    return response.data.purchases || [];
+    // API uses JSON:API format with 'data' array and 'included' relationships
+    const purchases = response.data.data || [];
+    const included = response.data.included || [];
+
+    // Create lookup maps for customers and offers
+    const customersMap = {};
+    const offersMap = {};
+
+    included.forEach(item => {
+      if (item.type === 'customers') {
+        customersMap[item.id] = item.attributes;
+      } else if (item.type === 'offers') {
+        offersMap[item.id] = item.attributes;
+      }
+    });
+
+    // Transform JSON:API format to our expected format
+    return purchases.map(purchase => {
+      const customerId = purchase.relationships?.customer?.data?.id;
+      const offerId = purchase.relationships?.offer?.data?.id;
+      const customer = customersMap[customerId];
+      const offer = offersMap[offerId];
+
+      // Split name into first and last name (best effort)
+      let firstName = '';
+      let lastName = '';
+      if (customer?.name) {
+        const nameParts = customer.name.split(' ');
+        firstName = nameParts[0] || '';
+        lastName = nameParts.slice(1).join(' ') || '';
+      }
+
+      return {
+        id: purchase.id,
+        created_at: purchase.attributes.created_at,
+        status: purchase.attributes.deactivated_at ? 'refunded' : 'completed',
+        amount: (purchase.attributes.amount_in_cents || 0) / 100, // Convert cents to dollars
+        offer_name: offer?.title || 'Unknown Product',
+        customer: customer ? {
+          email: customer.email || '',
+          first_name: firstName,
+          last_name: lastName,
+          phone: '' // Phone not available in API response
+        } : null
+      };
+    });
   } catch (error) {
     console.error('Error fetching Kajabi sales:', error.response?.data || error.message);
     throw error;
