@@ -45,6 +45,7 @@ const EXCEL_FILE_PATH = path.join(__dirname, 'sales_data.xlsx');
 
 /**
  * Fetch recent sales from Kajabi
+ * Filters purchases created after the cutoff date specified in env
  */
 async function fetchKajabiSales() {
   try {
@@ -52,6 +53,15 @@ async function fetchKajabiSales() {
 
     // Get access token first
     const accessToken = await getKajabiAccessToken();
+
+    // Get cutoff date from environment (if specified)
+    const cutoffDate = process.env.PURCHASE_CUTOFF_DATE
+      ? new Date(process.env.PURCHASE_CUTOFF_DATE)
+      : null;
+
+    if (cutoffDate) {
+      console.log(`Filtering purchases after: ${cutoffDate.toISOString()} (${cutoffDate.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })} PST)`);
+    }
 
     const response = await axios.get(`${KAJABI_BASE_URL}/v1/purchases?include=customer,offer`, {
       headers: {
@@ -77,7 +87,7 @@ async function fetchKajabiSales() {
     });
 
     // Transform JSON:API format to our expected format
-    return purchases.map(purchase => {
+    let transformedPurchases = purchases.map(purchase => {
       const customerId = purchase.relationships?.customer?.data?.id;
       const offerId = purchase.relationships?.offer?.data?.id;
       const customer = customersMap[customerId];
@@ -106,6 +116,19 @@ async function fetchKajabiSales() {
         } : null
       };
     });
+
+    // Filter purchases by cutoff date if specified
+    if (cutoffDate) {
+      const beforeFilter = transformedPurchases.length;
+      transformedPurchases = transformedPurchases.filter(purchase => {
+        const purchaseDate = new Date(purchase.created_at);
+        return purchaseDate > cutoffDate;
+      });
+      const filtered = beforeFilter - transformedPurchases.length;
+      console.log(`Filtered out ${filtered} purchases before cutoff date. Processing ${transformedPurchases.length} new purchases.`);
+    }
+
+    return transformedPurchases;
   } catch (error) {
     console.error('Error fetching Kajabi sales:', error.response?.data || error.message);
     throw error;

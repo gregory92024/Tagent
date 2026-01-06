@@ -39,10 +39,11 @@ This project automates the flow of sales data from Kajabi to HubSpot CRM and Exc
 
 ## Environment Variables
 
-- `KAJABI_API_KEY`: Your Kajabi API key
-- `KAJABI_API_SECRET`: Your Kajabi API secret
-- `HUBSPOT_ACCESS_TOKEN`: Your HubSpot personal access token
+- `KAJABI_API_KEY`: Your Kajabi API key (OAuth2 client ID)
+- `KAJABI_API_SECRET`: Your Kajabi API secret (OAuth2 client secret)
+- `HUBSPOT_ACCESS_TOKEN`: Your HubSpot personal access token (PAT)
 - `POLL_INTERVAL`: (Optional) Minutes between checks when using scheduler (default: 5)
+- `PURCHASE_CUTOFF_DATE`: (Optional) ISO 8601 date - only process purchases created after this date (default: 2026-01-05T08:00:00Z)
 
 ## File Structure
 
@@ -95,7 +96,7 @@ The scheduler will automatically check for new sales every 5 minutes and sync th
 - ✓ HubSpot API integration working with Personal Access Token
 - ✓ Excel export functional
 - ✓ Duplicate contact handling fixed - properly updates existing contacts
-- Planned: Date-based filtering for new purchases only
+- ✓ Date-based filtering implemented - only processes new purchases after Jan 5, 2026
 
 ## Requirements
 

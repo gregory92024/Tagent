@@ -7,8 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### To Be Added
-- Date-based filtering to process only new purchases after January 5, 2026 (PST)
+## [0.3.0] - 2026-01-05
+
+### Added
+- Date-based filtering for purchases via `PURCHASE_CUTOFF_DATE` environment variable
+- Only processes purchases created after the specified cutoff date
+- Automatic timezone display (PST) for cutoff date in logs
+- Filter statistics showing how many purchases were filtered vs processed
+
+### Changed
+- Integration now skips historical data and only syncs new purchases
+- Default cutoff set to January 5, 2026 00:00:00 PST (2026-01-05T08:00:00Z)
 
 ## [0.2.1] - 2026-01-05
 
