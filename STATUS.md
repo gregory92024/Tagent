@@ -131,3 +131,17 @@ Agent/
 cd /mnt/c/Users/Gregory/OneDrive/Desktop/Agent
 node index.js  # To test integration
 ```
+
+### RESUME PROMPT FOR NEW SESSION:
+```
+Navigate to /mnt/c/Users/Gregory/OneDrive/Desktop/Agent
+
+Read STATUS.md for checkpoint details. We're building a Kajabi → HubSpot → Excel integration.
+
+All API tests passed. One bug to fix:
+- File: index.js, function upsertHubSpotContact() (lines ~141-191)
+- Issue: 409 duplicate contact handling catches the error but search/update fails
+- The integration runs but skips existing contacts instead of updating them
+
+Fix the 409 handling so when a contact already exists, it properly searches and updates instead of throwing an error.
+```
