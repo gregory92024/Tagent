@@ -155,7 +155,13 @@ async function upsertHubSpotContact(customerData) {
       console.log(`Created HubSpot contact: ${customerData.email}`);
       return contact;
     } catch (error) {
-      if (error.statusCode === 409) {
+      // Check for 409 conflict in multiple places (HubSpot SDK varies)
+      const is409 = error.statusCode === 409 ||
+                    error.code === 409 ||
+                    error.message?.includes('409') ||
+                    error.body?.status === 'error' && error.body?.message?.includes('already exists');
+
+      if (is409) {
         // Contact exists, search for it and update
         try {
           const existingContact = await hubspotClient.crm.contacts.searchApi.doSearch({

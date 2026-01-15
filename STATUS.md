@@ -103,45 +103,24 @@ Agent/
 
 ---
 
-**Last Updated**: January 15, 2026 23:15 PST
+**Last Updated**: January 15, 2026
 **Updated By**: Claude Code
-**Status**: Operational with 1 known issue
+**Status**: Fully Operational - All issues resolved
 
 ---
 
-## SESSION CHECKPOINT - January 15, 2026
+## SESSION UPDATE - January 15, 2026
 
-### API Tests Completed:
-1. ✅ Kajabi OAuth2 - Working
-2. ✅ Kajabi Purchases API - Working (30 purchases, 17 after cutoff)
-3. ✅ HubSpot PAT Auth - Working
-4. ✅ HubSpot Contact Create - Working
-5. ✅ HubSpot Contact Search - Working
-6. ✅ HubSpot Deal Create - Working
-7. ✅ Excel Write - Working
+### BUG FIXED: 409 Duplicate Contact Handling
 
-### BUG TO FIX:
-**Location**: `index.js` lines 141-191 (`upsertHubSpotContact` function)
-**Issue**: 409 duplicate handling catches error but search/update fails silently
-**Symptom**: "Error upserting HubSpot contact: HTTP-Code: 409" in logs
-**Fix needed**: Debug why contact search after 409 isn't finding/updating the contact
+**Problem**: The HubSpot SDK doesn't consistently set `error.statusCode`. The 409 conflict was appearing in `error.message` as "HTTP-Code: 409" but not in `error.statusCode`.
 
-### Resume Command:
-```bash
-cd /mnt/c/Users/Gregory/OneDrive/Desktop/Agent
-node index.js  # To test integration
+**Solution**: Updated `upsertHubSpotContact()` to check multiple places for the 409:
+```javascript
+const is409 = error.statusCode === 409 ||
+              error.code === 409 ||
+              error.message?.includes('409') ||
+              error.body?.status === 'error' && error.body?.message?.includes('already exists');
 ```
 
-### RESUME PROMPT FOR NEW SESSION:
-```
-Navigate to /mnt/c/Users/Gregory/OneDrive/Desktop/Agent
-
-Read STATUS.md for checkpoint details. We're building a Kajabi → HubSpot → Excel integration.
-
-All API tests passed. One bug to fix:
-- File: index.js, function upsertHubSpotContact() (lines ~141-191)
-- Issue: 409 duplicate contact handling catches the error but search/update fails
-- The integration runs but skips existing contacts instead of updating them
-
-Fix the 409 handling so when a contact already exists, it properly searches and updates instead of throwing an error.
-```
+**Result**: Integration now properly updates existing contacts. Test run processed 17 purchases successfully.
