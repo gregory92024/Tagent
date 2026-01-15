@@ -103,6 +103,31 @@ Agent/
 
 ---
 
-**Last Updated**: January 5, 2026 22:30 PST
-**Updated By**: Claude Sonnet 4.5 via Claude Code
-**Status**: All systems operational ✅
+**Last Updated**: January 15, 2026 23:15 PST
+**Updated By**: Claude Code
+**Status**: Operational with 1 known issue
+
+---
+
+## SESSION CHECKPOINT - January 15, 2026
+
+### API Tests Completed:
+1. ✅ Kajabi OAuth2 - Working
+2. ✅ Kajabi Purchases API - Working (30 purchases, 17 after cutoff)
+3. ✅ HubSpot PAT Auth - Working
+4. ✅ HubSpot Contact Create - Working
+5. ✅ HubSpot Contact Search - Working
+6. ✅ HubSpot Deal Create - Working
+7. ✅ Excel Write - Working
+
+### BUG TO FIX:
+**Location**: `index.js` lines 141-191 (`upsertHubSpotContact` function)
+**Issue**: 409 duplicate handling catches error but search/update fails silently
+**Symptom**: "Error upserting HubSpot contact: HTTP-Code: 409" in logs
+**Fix needed**: Debug why contact search after 409 isn't finding/updating the contact
+
+### Resume Command:
+```bash
+cd /mnt/c/Users/Gregory/OneDrive/Desktop/Agent
+node index.js  # To test integration
+```
