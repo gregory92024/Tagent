@@ -143,9 +143,19 @@ Kajabi Contacts → Excel Spreadsheet → HubSpot CONTACTS
 
 ## TO CONTINUE
 
+### Task 1: Create CLAUDE.md (do this first)
+No rules/best practices file exists yet. Create `CLAUDE.md` with:
+- Project overview (Kajabi → Excel → HubSpot sync)
+- Code style guidelines
+- Git workflow (main = production, tim-dev = development)
+- API credential handling (never commit .env)
+- File structure documentation
+- Testing requirements
+
+### Task 2: Discuss Deal Syncing
 User wants to discuss adding Deal syncing. Key questions:
 1. Should we create Deals from Kajabi purchases?
 2. Who should be Deal Owner?
 3. Should we disable whatever is currently creating Deals?
 
-Start by asking: "Ready to continue discussing Deal creation. Do you want me to build the Deal sync, or first investigate what's currently creating those Deals in HubSpot?"
+Start by: "I'll first create the CLAUDE.md with project rules, then we can continue discussing Deal creation."
