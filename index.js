@@ -228,32 +228,63 @@ async function createHubSpotDeal(saleData, contactId) {
 
 /**
  * Update Excel file with sale data
+ * Tracks purchases by ID to prevent duplicates
  */
 async function updateExcelFile(salesData) {
   try {
     const workbook = new ExcelJS.Workbook();
     let worksheet;
+    const existingPurchaseIds = new Set();
 
     // Try to load existing file
+    let fileExists = false;
     try {
       await workbook.xlsx.readFile(EXCEL_FILE_PATH);
+      fileExists = true;
       worksheet = workbook.getWorksheet('Sales');
     } catch (error) {
-      // File doesn't exist, create new one
+      // File doesn't exist
+      fileExists = false;
+    }
+
+    if (fileExists && worksheet) {
+      // Collect existing purchase IDs to prevent duplicates (column 1 = Purchase ID)
+      worksheet.eachRow((row, rowNum) => {
+        if (rowNum > 1) { // Skip header
+          const purchaseId = row.getCell(1).value; // Column 1 is Purchase ID
+          if (purchaseId) {
+            existingPurchaseIds.add(String(purchaseId));
+          }
+        }
+      });
+    } else {
+      // Create new worksheet
       worksheet = workbook.addWorksheet('Sales');
       worksheet.columns = [
+        { header: 'Purchase ID', key: 'purchase_id', width: 15 },
         { header: 'Date', key: 'date', width: 15 },
         { header: 'Customer Name', key: 'name', width: 25 },
         { header: 'Email', key: 'email', width: 30 },
-        { header: 'Product', key: 'product', width: 30 },
+        { header: 'Product', key: 'product', width: 40 },
         { header: 'Amount', key: 'amount', width: 12 },
         { header: 'Status', key: 'status', width: 12 }
       ];
     }
 
-    // Add sales data
+    // Add only new sales (not already in Excel)
+    let addedCount = 0;
+    let skippedCount = 0;
+
     for (const sale of salesData) {
+      const purchaseId = String(sale.id);
+
+      if (existingPurchaseIds.has(purchaseId)) {
+        skippedCount++;
+        continue; // Skip duplicate
+      }
+
       worksheet.addRow({
+        purchase_id: purchaseId,
         date: new Date(sale.created_at).toLocaleDateString(),
         name: `${sale.customer?.first_name || ''} ${sale.customer?.last_name || ''}`.trim(),
         email: sale.customer?.email || '',
@@ -261,10 +292,11 @@ async function updateExcelFile(salesData) {
         amount: `$${sale.amount || 0}`,
         status: sale.status || 'completed'
       });
+      addedCount++;
     }
 
     await workbook.xlsx.writeFile(EXCEL_FILE_PATH);
-    console.log(`Excel file updated: ${EXCEL_FILE_PATH}`);
+    console.log(`Excel file updated: ${EXCEL_FILE_PATH} (${addedCount} added, ${skippedCount} already existed)`);
   } catch (error) {
     console.error('Error updating Excel file:', error.message);
     throw error;
