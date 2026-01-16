@@ -63,16 +63,32 @@ async function fetchKajabiSales() {
       console.log(`Filtering purchases after: ${cutoffDate.toISOString()} (${cutoffDate.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })} PST)`);
     }
 
-    const response = await axios.get(`${KAJABI_BASE_URL}/v1/purchases?include=customer,offer`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    // Fetch all pages of purchases (API is paginated, 30 per page)
+    let allPurchases = [];
+    let allIncluded = [];
+    let page = 1;
+    let hasMore = true;
+
+    while (hasMore) {
+      const response = await axios.get(`${KAJABI_BASE_URL}/v1/purchases?include=customer,offer&page[number]=${page}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      allPurchases = allPurchases.concat(response.data.data || []);
+      allIncluded = allIncluded.concat(response.data.included || []);
+
+      hasMore = response.data.links?.next ? true : false;
+      page++;
+    }
+
+    console.log(`Fetched ${allPurchases.length} total purchases from ${page - 1} pages`);
 
     // API uses JSON:API format with 'data' array and 'included' relationships
-    const purchases = response.data.data || [];
-    const included = response.data.included || [];
+    const purchases = allPurchases;
+    const included = allIncluded;
 
     // Create lookup maps for customers and offers
     const customersMap = {};
