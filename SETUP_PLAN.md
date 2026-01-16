@@ -280,4 +280,51 @@ def run_sync():
 
 ---
 
+---
+
+## Automation Setup
+
+### Manual Run
+```bash
+cd /Users/timothysepulvado/Teach/CRM_integration
+./sync.sh              # Full sync
+./sync.sh kajabi       # Kajabi → Excel only
+./sync.sh hubspot      # Excel → HubSpot only
+```
+
+### Option 1: Launchd (Recommended for macOS)
+```bash
+# Install the scheduled job (runs daily at 6:00 AM)
+cp com.teachce.crm-sync.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.teachce.crm-sync.plist
+
+# Check status
+launchctl list | grep crm-sync
+
+# Run manually
+launchctl start com.teachce.crm-sync
+
+# Unload/disable
+launchctl unload ~/Library/LaunchAgents/com.teachce.crm-sync.plist
+```
+
+### Option 2: Cron
+```bash
+# Open crontab editor
+crontab -e
+
+# Add this line for daily sync at 6:00 AM:
+0 6 * * * /Users/timothysepulvado/Teach/CRM_integration/sync.sh full
+
+# Other schedules:
+# Every hour: 0 * * * * /path/to/sync.sh full
+# Twice daily (6 AM and 6 PM): 0 6,18 * * * /path/to/sync.sh full
+# Every Monday at 9 AM: 0 9 * * 1 /path/to/sync.sh full
+```
+
+### Logs
+Sync logs are saved to: `logs/sync_YYYYMMDD_HHMMSS.log`
+
+---
+
 *Last Updated: 2026-01-15*
