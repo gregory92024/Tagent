@@ -1,0 +1,20 @@
+# Environment variables
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# Data files with sensitive info
+data/*.xlsx
+data/*.csv
+data/*.json
+
+# Logs
+logs/
+
+# OS files
+.DS_Store
