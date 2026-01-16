@@ -105,7 +105,7 @@ async function fetchKajabiSales() {
       return {
         id: purchase.id,
         created_at: purchase.attributes.created_at,
-        status: purchase.attributes.deactivated_at ? 'refunded' : 'completed',
+        status: purchase.attributes.deactivation_reason === 'refunded' ? 'refunded' : 'completed',
         amount: (purchase.attributes.amount_in_cents || 0) / 100, // Convert cents to dollars
         offer_name: offer?.title || 'Unknown Product',
         customer: customer ? {
