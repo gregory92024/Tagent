@@ -3,6 +3,10 @@ const axios = require('axios');
 const { Client } = require('@hubspot/api-client');
 const ExcelJS = require('exceljs');
 const path = require('path');
+const fs = require('fs');
+
+// Sync state file for tracking last processed date
+const SYNC_STATE_FILE = path.join(__dirname, 'sync_state.json');
 
 // Initialize HubSpot client
 const hubspotClient = new Client({ accessToken: process.env.HUBSPOT_ACCESS_TOKEN });
@@ -44,6 +48,34 @@ async function getKajabiAccessToken() {
 const EXCEL_FILE_PATH = path.join(__dirname, 'sales_data.xlsx');
 
 /**
+ * Load sync state (last processed purchase date)
+ */
+function loadSyncState() {
+  try {
+    if (fs.existsSync(SYNC_STATE_FILE)) {
+      const data = JSON.parse(fs.readFileSync(SYNC_STATE_FILE, 'utf8'));
+      return data;
+    }
+  } catch (error) {
+    console.log('No previous sync state found, will use env cutoff date');
+  }
+  return null;
+}
+
+/**
+ * Save sync state after successful sync
+ */
+function saveSyncState(latestPurchaseDate) {
+  const state = {
+    last_sync: new Date().toISOString(),
+    last_purchase_date: latestPurchaseDate,
+    cutoff_for_next_run: latestPurchaseDate
+  };
+  fs.writeFileSync(SYNC_STATE_FILE, JSON.stringify(state, null, 2));
+  console.log(`✓ Sync state saved. Next run will process purchases after: ${latestPurchaseDate}`);
+}
+
+/**
  * Fetch recent sales from Kajabi
  * Filters purchases created after the cutoff date specified in env
  */
@@ -54,10 +86,17 @@ async function fetchKajabiSales() {
     // Get access token first
     const accessToken = await getKajabiAccessToken();
 
-    // Get cutoff date from environment (if specified)
-    const cutoffDate = process.env.PURCHASE_CUTOFF_DATE
-      ? new Date(process.env.PURCHASE_CUTOFF_DATE)
-      : null;
+    // Get cutoff date: prefer saved state, fall back to env
+    const syncState = loadSyncState();
+    let cutoffDate = null;
+
+    if (syncState && syncState.cutoff_for_next_run) {
+      cutoffDate = new Date(syncState.cutoff_for_next_run);
+      console.log(`Using saved cutoff date from last sync: ${cutoffDate.toISOString()}`);
+    } else if (process.env.PURCHASE_CUTOFF_DATE) {
+      cutoffDate = new Date(process.env.PURCHASE_CUTOFF_DATE);
+      console.log(`Using env cutoff date (first run): ${cutoffDate.toISOString()}`);
+    }
 
     if (cutoffDate) {
       console.log(`Filtering purchases after: ${cutoffDate.toISOString()} (${cutoffDate.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })} PST)`);
@@ -357,6 +396,15 @@ async function runIntegration() {
 
     // Step 4: Update Excel file
     await updateExcelFile(sales);
+
+    // Step 5: Save sync state with latest purchase date
+    if (sales.length > 0) {
+      const latestPurchase = sales.reduce((latest, sale) => {
+        const saleDate = new Date(sale.created_at);
+        return saleDate > new Date(latest.created_at) ? sale : latest;
+      });
+      saveSyncState(latestPurchase.created_at);
+    }
 
     console.log('\n✓ Integration completed successfully!');
   } catch (error) {
