@@ -7,6 +7,7 @@ import os
 import json
 import logging
 import re
+import hashlib
 from datetime import datetime
 from typing import Optional
 import pandas as pd
@@ -43,7 +44,9 @@ class SyncPipeline:
         self.hubspot = HubSpotClient()
         self.excel = ExcelSync()
         self.last_sync_file = "data/last_sync.json"
+        self.hubspot_sync_state_file = "data/hubspot_sync_state.json"
         self.invalid_email_log = "logs/invalid_emails.log"
+        self._hubspot_sync_state = None
 
     def validate_email(self, email: str) -> bool:
         """
@@ -60,6 +63,46 @@ class SyncPipeline:
         timestamp = datetime.now().isoformat()
         with open(self.invalid_email_log, "a") as f:
             f.write(f"{timestamp} | Email: {email} | Name: {name} | Reason: {reason}\n")
+
+    def _compute_contact_hash(self, contact_data: dict) -> str:
+        """Compute a hash of contact data to detect changes"""
+        # Sort keys for consistent hashing
+        relevant_fields = ["email", "firstname", "lastname", "phone", "address",
+                          "city", "state", "zip", "credentials", "organization",
+                          "specialty", "year_acquired", "courses_ordered"]
+        data_str = "|".join(str(contact_data.get(f, "")) for f in relevant_fields)
+        return hashlib.md5(data_str.encode()).hexdigest()
+
+    def _load_hubspot_sync_state(self) -> dict:
+        """Load the HubSpot sync state (which contacts have been synced)"""
+        if self._hubspot_sync_state is not None:
+            return self._hubspot_sync_state
+        try:
+            with open(self.hubspot_sync_state_file, "r") as f:
+                self._hubspot_sync_state = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            self._hubspot_sync_state = {"synced_contacts": {}}
+        return self._hubspot_sync_state
+
+    def _save_hubspot_sync_state(self):
+        """Save the HubSpot sync state"""
+        if self._hubspot_sync_state is None:
+            return
+        os.makedirs(os.path.dirname(self.hubspot_sync_state_file), exist_ok=True)
+        with open(self.hubspot_sync_state_file, "w") as f:
+            json.dump(self._hubspot_sync_state, f, indent=2)
+
+    def _is_contact_changed(self, email: str, data_hash: str) -> bool:
+        """Check if contact data has changed since last sync"""
+        state = self._load_hubspot_sync_state()
+        stored_hash = state.get("synced_contacts", {}).get(email)
+        return stored_hash != data_hash
+
+    def _mark_contact_synced(self, email: str, data_hash: str):
+        """Mark a contact as synced with its data hash"""
+        state = self._load_hubspot_sync_state()
+        state["synced_contacts"][email] = data_hash
+        self._hubspot_sync_state = state
 
     def get_last_sync_time(self) -> Optional[datetime]:
         """Get the timestamp of the last successful sync"""
@@ -143,16 +186,19 @@ class SyncPipeline:
 
         return results
 
-    def sync_to_hubspot(self) -> dict:
+    def sync_to_hubspot(self, force_full: bool = False) -> dict:
         """
-        Sync all Excel subscribers to HubSpot
+        Sync Excel subscribers to HubSpot (incremental by default)
+
+        Args:
+            force_full: If True, sync all contacts regardless of change status
 
         Returns:
             Dict with sync results
         """
-        results = {"processed": 0, "created": 0, "updated": 0, "skipped": 0, "errors": []}
+        results = {"processed": 0, "created": 0, "updated": 0, "skipped": 0, "unchanged": 0, "errors": []}
 
-        logger.info("Syncing subscribers to HubSpot...")
+        logger.info("Syncing subscribers to HubSpot (incremental)..." if not force_full else "Syncing ALL subscribers to HubSpot (forced full sync)...")
 
         try:
             subscribers = self.excel.get_all_subscribers()
@@ -184,7 +230,7 @@ class SyncPipeline:
                         continue
 
                     # Strip whitespace from email
-                    contact_data["email"] = str(contact_data["email"]).strip()
+                    contact_data["email"] = str(contact_data["email"]).strip().lower()
 
                     # Validate email format
                     if not self.validate_email(contact_data["email"]):
@@ -196,6 +242,12 @@ class SyncPipeline:
                         )
                         logger.warning(f"Skipping invalid email: {contact_data['email']}")
                         results["skipped"] += 1
+                        continue
+
+                    # Check if contact data has changed (incremental sync)
+                    data_hash = self._compute_contact_hash(contact_data)
+                    if not force_full and not self._is_contact_changed(contact_data["email"], data_hash):
+                        results["unchanged"] += 1
                         continue
 
                     # Check if exists and create/update
@@ -210,16 +262,22 @@ class SyncPipeline:
                         self.hubspot.create_contact(contact_data)
                         results["created"] += 1
 
+                    # Mark as synced with current hash
+                    self._mark_contact_synced(contact_data["email"], data_hash)
+
                 except Exception as e:
                     results["errors"].append(
                         {"email": subscriber.get("Email"), "error": str(e)}
                     )
                     logger.error(f"Error syncing {subscriber.get('Email')}: {e}")
 
+            # Save sync state
+            self._save_hubspot_sync_state()
+
             logger.info(
                 f"HubSpot sync complete: {results['created']} created, "
-                f"{results['updated']} updated, {results['skipped']} skipped, "
-                f"{len(results['errors'])} errors"
+                f"{results['updated']} updated, {results['unchanged']} unchanged, "
+                f"{results['skipped']} skipped, {len(results['errors'])} errors"
             )
 
         except Exception as e:
