@@ -54,9 +54,12 @@ CRM_integration/
 ├── run.py                  # CLI entry point
 ├── sync.sh                 # Bash automation wrapper
 ├── setup_cron.sh           # Cron job setup for WSL
+├── README.md               # Main documentation
+├── CHANGELOG.md            # Version history
 ├── data/
 │   ├── sales_tracking.xlsx # Master subscriber list
-│   └── last_sync.json      # Last sync timestamp
+│   ├── last_sync.json      # Last sync timestamp
+│   └── hubspot_sync_state.json  # Contact sync hashes (auto-created)
 ├── logs/
 │   ├── sync.log            # Operation logs
 │   └── invalid_emails.log  # Invalid email addresses
@@ -64,7 +67,7 @@ CRM_integration/
     ├── kajabi_client.py    # Kajabi API (OAuth2, contacts, purchases)
     ├── hubspot_client.py   # HubSpot API (contacts, custom properties)
     ├── excel_sync.py       # Excel read/write operations
-    └── sync_pipeline.py    # Main orchestration logic
+    └── sync_pipeline.py    # Main orchestration + incremental sync
 ```
 
 ---
@@ -115,6 +118,34 @@ These custom contact properties are created automatically:
 
 ---
 
+## Incremental Sync Mechanism
+
+The HubSpot sync uses data hashing to detect changes:
+
+**How it works:**
+1. Each contact's data is hashed using `_compute_contact_hash()`
+2. Hashes are stored in `data/hubspot_sync_state.json`
+3. On subsequent runs, only contacts with changed hashes are synced
+
+**Key functions in `sync_pipeline.py`:**
+- `_compute_contact_hash()` - Creates MD5 hash of contact data
+- `_load_hubspot_sync_state()` - Loads stored hashes
+- `_save_hubspot_sync_state()` - Saves hashes after sync
+- `_is_contact_changed()` - Checks if contact needs sync
+- `_mark_contact_synced()` - Records synced contact hash
+
+**Force full sync:**
+```python
+pipeline.sync_to_hubspot(force_full=True)
+```
+
+**Reset incremental state:**
+```bash
+rm data/hubspot_sync_state.json
+```
+
+---
+
 ## Error Handling
 
 - Invalid emails are logged to `logs/invalid_emails.log`
@@ -129,3 +160,12 @@ Before merging to main:
 1. Run `python run.py --hubspot-only` to test contact sync
 2. Check `logs/sync.log` for errors
 3. Verify a sample of contacts in HubSpot UI
+
+---
+
+## Documentation
+
+- **[README.md](README.md)** - Main documentation and quick start
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history
+- **[SYNC_RUN_ORDER.md](../SYNC_RUN_ORDER.md)** - Run order between projects
+- **[Agent README](../Agent/README.md)** - Related Node.js project

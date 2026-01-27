@@ -1,5 +1,10 @@
 # Context Handoff - CRM Integration
+
+> **ARCHIVED:** This document has been superseded by [README.md](README.md).
+> Kept for historical reference only.
+
 **Last Updated:** 2026-01-24
+**Archived:** 2026-01-27
 **Branch:** tim-dev (safe dev branch, main is protected)
 
 ---
