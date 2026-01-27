@@ -1,136 +1,97 @@
-# Context Handoff - CRM Integration Discussion
-**Created:** 2026-01-16
+# Context Handoff - CRM Integration
+**Last Updated:** 2026-01-24
 **Branch:** tim-dev (safe dev branch, main is protected)
 
 ---
 
-## CURRENT DISCUSSION - RESUME HERE
+## PROJECT STATUS: COMPLETE
 
-We are discussing whether to add **HubSpot Deal creation** to the pipeline. The user noticed:
-
-1. Deals exist in HubSpot with "No Owner" in the Deal Owner field
-2. User thought customer name should be there (but Deal Owner = HubSpot user, not customer)
-3. Customer info IS visible when clicking into deal details
-
-**KEY DISCOVERY:** Our current pipeline does NOT create Deals. We only sync Contacts.
-- The Deals in HubSpot are coming from somewhere else (likely Kajabi's native HubSpot integration or Zapier)
-
-**USER'S QUESTION:** Should we add purchase/deal syncing from Kajabi to HubSpot?
+All core functionality is implemented and working.
 
 ---
 
-## WHAT THE PIPELINE CURRENTLY DOES
+## WHAT THE PIPELINE DOES
 
 ```
 Kajabi Contacts → Excel Spreadsheet → HubSpot CONTACTS
 ```
 
 **What we sync:** Customer info (name, email, phone, address, courses ordered)
-**What we DON'T sync:** Purchases as Deals
+**What we DON'T sync:** Purchases as Deals (handled by separate Agent project)
 
 ---
 
-## KAJABI DATA AVAILABLE
+## TWO INTEGRATION PROJECTS
 
-### Purchases (Sales) - We CAN fetch but DON'T use for Deals yet
-```json
-{
-  "id": "2184507302",
-  "amount": 45.0,
-  "currency": "USD",
-  "created_at": "2023-12-15T23:25:00.748Z",
-  "payment_type": "single",
-  "customer_id": "2207751125",  // Just an ID, need to lookup customer
-  "offer_id": "2149261862"      // Course ID, need to lookup offer name
-}
-```
+| Project | Location | Purpose |
+|---------|----------|---------|
+| **CRM_integration** (Python) | `Desktop/CRM_integration/` | Historical master list → HubSpot Contacts |
+| **Agent** (Node.js) | `Desktop/Agent/` | New purchases → Contacts + Deals |
 
-### Contacts (Customers)
-```json
-{
-  "id": "2688025664",
-  "name": "George Martinez",
-  "email": "georgemartinezdc@gmail.com",
-  "phone": null,
-  "billing_street": null,
-  "created_at": "2026-01-14T23:22:27.899Z"
-}
-```
-
-### Offers (Courses)
-```json
-{
-  "id": "2149261862",
-  "title": "206. Rating Principles and Philosophy of the AMA Guides, 5th edition",
-  "price": 45.0
-}
-```
-
-**CHALLENGE:** Purchases only have `customer_id`, not full customer details. To create a Deal linked to a Contact, we need to:
-1. Fetch purchase
-2. Look up customer by customer_id
-3. Look up offer by offer_id (to get course name)
-4. Create Deal in HubSpot linked to the Contact
+**Agent project:**
+- GitHub: `github.com/gregory92024/Tagent`
+- Filters: Only purchases after Jan 5, 2026
+- Creates HubSpot Deals (223 exist)
 
 ---
 
-## PROJECT STATUS - ALL WORKING
+## COMPLETED FEATURES
 
 | Component | Status |
 |-----------|--------|
-| Kajabi Auth | ✅ OAuth2 working |
-| Kajabi Purchases | ✅ 30 purchases available |
-| Kajabi Contacts | ✅ 25 contacts available |
-| Kajabi Offers | ✅ 30 courses available |
-| Excel Sync | ✅ 1,770 subscribers |
-| HubSpot Contacts | ✅ Working |
-| HubSpot Deals | ❌ NOT implemented yet |
-| Git Repo | ✅ github.com/timothysepulvado/CRM_integration |
-| Automation | ✅ sync.sh + launchd plist ready |
+| Kajabi OAuth2 | Working |
+| Kajabi → Excel sync | Working (1,770 records) |
+| Excel → HubSpot contacts | Working |
+| Full pipeline | Working |
+| Email validation | Added (logs invalid emails) |
+| Bash wrapper | Working |
+| Cron service | Running |
+| CLAUDE.md | Created |
 
 ---
 
 ## FILE LOCATIONS
 
 ```
-/Users/timothysepulvado/Teach/CRM_integration/
+/mnt/c/Users/Gregory/OneDrive/Desktop/CRM_integration/
 ├── src/
 │   ├── kajabi_client.py    # Kajabi API (auth, purchases, contacts, offers)
-│   ├── hubspot_client.py   # HubSpot API (contacts only, no deals yet)
+│   ├── hubspot_client.py   # HubSpot API (contacts, custom properties)
 │   ├── excel_sync.py       # Excel operations
-│   └── sync_pipeline.py    # Main orchestration
+│   └── sync_pipeline.py    # Main orchestration + email validation
+├── data/
+│   ├── sales_tracking.xlsx # Master subscriber list
+│   └── last_sync.json      # Last sync timestamp
+├── logs/
+│   ├── sync.log            # Operation logs
+│   └── invalid_emails.log  # Invalid email addresses
 ├── run.py                  # CLI entry point
 ├── sync.sh                 # Automation wrapper
+├── setup_cron.sh           # WSL cron job setup
+├── CLAUDE.md               # Project rules
 ├── SETUP_PLAN.md           # Full documentation
 └── .env                    # API credentials (not in git)
 ```
 
 ---
 
-## NEXT STEPS TO DISCUSS
-
-1. **Do we want to add Deal creation?**
-   - Would sync Kajabi purchases → HubSpot Deals
-   - Each Deal linked to Contact (customer)
-   - Include: amount, course name, date
-
-2. **Deal Owner question:**
-   - Deal Owner = HubSpot USER (salesperson), not customer
-   - Could set default owner (e.g., Tim's HubSpot user ID)
-   - Or leave as "No Owner" if no salesperson assigned
-
-3. **What's currently creating Deals?**
-   - Not our code
-   - Likely Kajabi's native HubSpot integration
-   - May want to disable that if we take over
-
----
-
 ## GIT STATUS
 
 - **main branch:** Production, working, protected
-- **tim-dev branch:** Currently checked out, safe for changes
+- **tim-dev branch:** Development, currently checked out
 - **GitHub:** https://github.com/timothysepulvado/CRM_integration (private)
+
+---
+
+## HOW TO RUN
+
+```bash
+cd /mnt/c/Users/Gregory/OneDrive/Desktop/CRM_integration
+source venv/bin/activate
+python run.py                  # Full sync
+python run.py --hubspot-only   # Sync Excel to HubSpot only
+python run.py --kajabi-only    # Sync Kajabi to Excel only
+```
 
 ---
 
@@ -141,21 +102,7 @@ Kajabi Contacts → Excel Spreadsheet → HubSpot CONTACTS
 
 ---
 
-## TO CONTINUE
+## OPTIONAL FUTURE ENHANCEMENTS
 
-### Task 1: Create CLAUDE.md (do this first)
-No rules/best practices file exists yet. Create `CLAUDE.md` with:
-- Project overview (Kajabi → Excel → HubSpot sync)
-- Code style guidelines
-- Git workflow (main = production, tim-dev = development)
-- API credential handling (never commit .env)
-- File structure documentation
-- Testing requirements
-
-### Task 2: Discuss Deal Syncing
-User wants to discuss adding Deal syncing. Key questions:
-1. Should we create Deals from Kajabi purchases?
-2. Who should be Deal Owner?
-3. Should we disable whatever is currently creating Deals?
-
-Start by: "I'll first create the CLAUDE.md with project rules, then we can continue discussing Deal creation."
+1. **Configure cron schedule** - Run `./setup_cron.sh` when ready for automated syncs
+2. **Auto-fix common email issues** - Extend validation to suggest/apply fixes

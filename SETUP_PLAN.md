@@ -2,7 +2,7 @@
 
 **Created:** 2026-01-15
 **Status:** In Progress
-**Location:** `/Users/timothysepulvado/Teach/CRM_integration`
+**Location:** `/mnt/c/Users/Gregory/OneDrive/Desktop/CRM_integration`
 
 ---
 
@@ -268,14 +268,14 @@ def run_sync():
 |------|---------|
 | `.env` | API credentials |
 | `data/sales_tracking.xlsx` | Master subscriber list (copied from Downloads) |
-| `/Users/timothysepulvado/Kajabi/*.csv` | Historical Kajabi order exports |
+| `/mnt/c/Users/Gregory/OneDrive/Desktop/Kajabi/*.csv` | Historical Kajabi order exports |
 
 ---
 
 ## Notes
 
-- Original subscriber list: `/Users/timothysepulvado/Downloads/Subscriber Test List.xlsx`
-- Kajabi order exports: `/Users/timothysepulvado/Kajabi/`
+- Original subscriber list: `/mnt/c/Users/Gregory/OneDrive/Desktop/CRM_integration/data/sales_tracking.xlsx`
+- Kajabi order exports: `/mnt/c/Users/Gregory/OneDrive/Desktop/Kajabi/`
 - HubSpot Portal ID still needed (can get from HubSpot dashboard)
 
 ---
@@ -286,40 +286,30 @@ def run_sync():
 
 ### Manual Run
 ```bash
-cd /Users/timothysepulvado/Teach/CRM_integration
+cd /mnt/c/Users/Gregory/OneDrive/Desktop/CRM_integration
 ./sync.sh              # Full sync
 ./sync.sh kajabi       # Kajabi → Excel only
 ./sync.sh hubspot      # Excel → HubSpot only
 ```
 
-### Option 1: Launchd (Recommended for macOS)
-```bash
-# Install the scheduled job (runs daily at 6:00 AM)
-cp com.teachce.crm-sync.plist ~/Library/LaunchAgents/
-launchctl load ~/Library/LaunchAgents/com.teachce.crm-sync.plist
-
-# Check status
-launchctl list | grep crm-sync
-
-# Run manually
-launchctl start com.teachce.crm-sync
-
-# Unload/disable
-launchctl unload ~/Library/LaunchAgents/com.teachce.crm-sync.plist
-```
-
-### Option 2: Cron
+### Cron (WSL/Linux)
 ```bash
 # Open crontab editor
 crontab -e
 
 # Add this line for daily sync at 6:00 AM:
-0 6 * * * /Users/timothysepulvado/Teach/CRM_integration/sync.sh full
+0 6 * * * /mnt/c/Users/Gregory/OneDrive/Desktop/CRM_integration/sync.sh full
 
 # Other schedules:
-# Every hour: 0 * * * * /path/to/sync.sh full
-# Twice daily (6 AM and 6 PM): 0 6,18 * * * /path/to/sync.sh full
-# Every Monday at 9 AM: 0 9 * * 1 /path/to/sync.sh full
+# Every hour: 0 * * * * /mnt/c/Users/Gregory/OneDrive/Desktop/CRM_integration/sync.sh full
+# Twice daily (6 AM and 6 PM): 0 6,18 * * * /mnt/c/Users/Gregory/OneDrive/Desktop/CRM_integration/sync.sh full
+# Every Monday at 9 AM: 0 9 * * 1 /mnt/c/Users/Gregory/OneDrive/Desktop/CRM_integration/sync.sh full
+
+# Verify cron is running
+sudo service cron status
+
+# Start cron if needed
+sudo service cron start
 ```
 
 ### Logs

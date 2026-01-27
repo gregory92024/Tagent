@@ -6,6 +6,7 @@ Main orchestration for Kajabi → Excel → HubSpot sync
 import os
 import json
 import logging
+import re
 from datetime import datetime
 from typing import Optional
 import pandas as pd
@@ -32,11 +33,33 @@ logger = logging.getLogger(__name__)
 class SyncPipeline:
     """Main pipeline for syncing Kajabi orders to Excel and HubSpot"""
 
+    # Email validation regex pattern
+    EMAIL_PATTERN = re.compile(
+        r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+    )
+
     def __init__(self):
         self.kajabi = KajabiClient()
         self.hubspot = HubSpotClient()
         self.excel = ExcelSync()
         self.last_sync_file = "data/last_sync.json"
+        self.invalid_email_log = "logs/invalid_emails.log"
+
+    def validate_email(self, email: str) -> bool:
+        """
+        Validate email format.
+        Returns True if valid, False otherwise.
+        """
+        if not email or not isinstance(email, str):
+            return False
+        return bool(self.EMAIL_PATTERN.match(email.strip()))
+
+    def log_invalid_email(self, email: str, name: str = "", reason: str = ""):
+        """Log invalid email to separate file for review"""
+        os.makedirs(os.path.dirname(self.invalid_email_log), exist_ok=True)
+        timestamp = datetime.now().isoformat()
+        with open(self.invalid_email_log, "a") as f:
+            f.write(f"{timestamp} | Email: {email} | Name: {name} | Reason: {reason}\n")
 
     def get_last_sync_time(self) -> Optional[datetime]:
         """Get the timestamp of the last successful sync"""
@@ -127,7 +150,7 @@ class SyncPipeline:
         Returns:
             Dict with sync results
         """
-        results = {"processed": 0, "created": 0, "updated": 0, "errors": []}
+        results = {"processed": 0, "created": 0, "updated": 0, "skipped": 0, "errors": []}
 
         logger.info("Syncing subscribers to HubSpot...")
 
@@ -157,10 +180,23 @@ class SyncPipeline:
 
                     # Skip if no email or NaN
                     if not contact_data["email"] or (isinstance(contact_data["email"], float) and pd.isna(contact_data["email"])):
+                        results["skipped"] += 1
                         continue
 
                     # Strip whitespace from email
                     contact_data["email"] = str(contact_data["email"]).strip()
+
+                    # Validate email format
+                    if not self.validate_email(contact_data["email"]):
+                        name = f"{subscriber.get('Name', '')} {subscriber.get('Last Name', '')}".strip()
+                        self.log_invalid_email(
+                            contact_data["email"],
+                            name=name,
+                            reason="Invalid email format"
+                        )
+                        logger.warning(f"Skipping invalid email: {contact_data['email']}")
+                        results["skipped"] += 1
+                        continue
 
                     # Check if exists and create/update
                     existing = self.hubspot.search_contact_by_email(
@@ -182,7 +218,8 @@ class SyncPipeline:
 
             logger.info(
                 f"HubSpot sync complete: {results['created']} created, "
-                f"{results['updated']} updated, {len(results['errors'])} errors"
+                f"{results['updated']} updated, {results['skipped']} skipped, "
+                f"{len(results['errors'])} errors"
             )
 
         except Exception as e:
