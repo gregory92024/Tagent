@@ -20,6 +20,9 @@ npm-debug.log*
 *.xls
 sales_data.*
 
+# Sync state (auto-generated - do not commit)
+sync_state.json
+
 # IDE
 .vscode/
 .idea/

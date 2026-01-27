@@ -48,14 +48,45 @@ This project automates the flow of sales data from Kajabi to HubSpot CRM and Exc
 ## File Structure
 
 ```
-agent/
-├── index.js           # Main integration script
-├── scheduler.js       # Runs integration on a schedule
-├── config.js          # Configuration management
-├── package.json       # Dependencies
-├── .env              # API credentials (DO NOT COMMIT)
-├── .gitignore        # Protects sensitive files
-└── sales_data.xlsx   # Generated Excel file with sales data
+Agent/
+├── index.js              # Main integration script
+├── scheduler.js          # Scheduled runner
+├── config.js             # Configuration loader
+├── package.json          # Dependencies & scripts
+├── .env                  # Credentials (gitignored)
+├── .env.example          # Template for credentials
+├── sync_state.json       # Auto-advancing cutoff (gitignored)
+├── sales_data.xlsx       # Generated output (gitignored)
+├── README.md             # This file
+├── SETUP.md              # Setup instructions
+├── USAGE.md              # Usage guide
+├── API_DOCUMENTATION.md  # Technical reference
+├── CHANGELOG.md          # Version history
+└── STATUS.md             # Current status
+```
+
+## Sync State Tracking
+
+The integration maintains a `sync_state.json` file to track progress:
+
+```json
+{
+  "last_sync": "2026-01-27T11:32:33.033Z",
+  "last_purchase_date": "2026-01-27T04:35:29.191Z",
+  "cutoff_for_next_run": "2026-01-27T04:35:29.191Z"
+}
+```
+
+**How it works:**
+- On first run, uses `PURCHASE_CUTOFF_DATE` from `.env`
+- After processing, saves the latest purchase date
+- Next run automatically uses saved cutoff (no manual updates needed)
+- Prevents re-processing old purchases on subsequent runs
+
+**To reset and re-sync all purchases:**
+```bash
+rm sync_state.json
+npm start
 ```
 
 ## Usage
@@ -90,13 +121,14 @@ The scheduler will automatically check for new sales every 5 minutes and sync th
 ✓ Error handling and logging
 ✓ Secure credential management
 
-## Current Status (January 5, 2026)
+## Current Status (January 27, 2026)
 
 - ✓ Kajabi API integration working with OAuth2
 - ✓ HubSpot API integration working with Personal Access Token
-- ✓ Excel export functional
+- ✓ Excel export functional with duplicate prevention
 - ✓ Duplicate contact handling fixed - properly updates existing contacts
-- ✓ Date-based filtering implemented - only processes new purchases after Jan 5, 2026
+- ✓ Auto-advancing cutoff date via `sync_state.json`
+- ✓ 303+ deals synced to HubSpot
 
 ## Requirements
 
@@ -133,6 +165,11 @@ For issues or questions:
 - API credentials stored in `.env` (not committed to git)
 - Follows security best practices
 - Regular credential rotation recommended
+
+## Related Projects
+
+- **[CRM_integration](../CRM_integration/)** - Python project for enriching HubSpot contacts with extended data
+- **[SYNC_RUN_ORDER.md](../SYNC_RUN_ORDER.md)** - Run order and scheduling between projects
 
 ## License
 

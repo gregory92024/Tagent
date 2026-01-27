@@ -1,16 +1,18 @@
-# Project Status - January 5, 2026
+# Project Status - January 27, 2026
 
-## Current State: ✅ Production Ready
+## Current State: ✅ Production Ready (v0.4.0)
 
 ### System Overview
-Fully functional Kajabi → HubSpot → Excel integration with OAuth2 authentication, duplicate handling, and date-based filtering.
+Fully functional Kajabi → HubSpot → Excel integration with OAuth2 authentication, duplicate handling, and auto-advancing sync state.
 
 ### Active Configuration
 ```
+Version: 0.4.0
 API Version: Kajabi API v1 (JSON:API format)
 Authentication: OAuth2 Client Credentials
 HubSpot: Personal Access Token (PAT)
-Date Filter: January 5, 2026 00:00:00 PST
+Sync State: Auto-advancing cutoff via sync_state.json
+HubSpot Deals: 303+
 ```
 
 ### Components Status
@@ -35,18 +37,19 @@ Date Filter: January 5, 2026 00:00:00 PST
 - Updates on each sync
 - **Status**: Fully operational
 
-#### ✅ Date Filtering
-- Cutoff: January 5, 2026 00:00:00 PST (2026-01-05T08:00:00Z)
-- Filters out 30 historical purchases
-- Only processes new purchases going forward
+#### ✅ Sync State Tracking (NEW in v0.4.0)
+- Auto-advancing cutoff date via `sync_state.json`
+- After each sync, saves latest purchase date
+- Next run automatically uses saved cutoff
+- No manual date updates needed
 - **Status**: Active and working
 
-### Recent Changes (Jan 5, 2026)
-1. ✅ Updated to OAuth2 for Kajabi API
-2. ✅ Fixed duplicate contact handling
-3. ✅ Implemented date-based filtering
-4. ✅ Updated all documentation
-5. ✅ Committed and pushed to GitHub
+### Recent Changes (Jan 27, 2026)
+1. ✅ Added auto-advancing sync state (v0.4.0)
+2. ✅ `loadSyncState()` reads last processed date
+3. ✅ `saveSyncState()` saves after successful sync
+4. ✅ 303+ deals synced to HubSpot
+5. ✅ Updated all documentation
 
 ### Git Repository
 - **URL**: https://github.com/gregory92024/Tagent
@@ -56,11 +59,11 @@ Date Filter: January 5, 2026 00:00:00 PST
 
 ### Next Run Expectations
 When executed, the integration will:
-1. Authenticate with Kajabi via OAuth2
-2. Fetch all purchases (API returns 30 total)
-3. Filter to only purchases after Jan 5, 2026 00:00:00 PST
-4. Process 0 purchases (all existing are before cutoff)
-5. Wait for new purchases to appear in Kajabi
+1. Load sync state from `sync_state.json`
+2. Authenticate with Kajabi via OAuth2
+3. Fetch all purchases and filter by saved cutoff
+4. Process only new purchases since last run
+5. Save updated sync state with latest purchase date
 
 ### Future Purchases
 Any new purchase created after January 5, 2026 will:
@@ -92,6 +95,7 @@ Agent/
 ├── scheduler.js           # Continuous monitoring
 ├── config.js              # Configuration loader
 ├── package.json           # Dependencies
+├── sync_state.json        # Auto-advancing cutoff (gitignored)
 └── sales_data.xlsx        # Generated output (gitignored)
 ```
 
@@ -103,24 +107,22 @@ Agent/
 
 ---
 
-**Last Updated**: January 15, 2026
+**Last Updated**: January 27, 2026
 **Updated By**: Claude Code
-**Status**: Fully Operational - All issues resolved
+**Version**: 0.4.0
+**Status**: Fully Operational - All systems running
 
 ---
 
-## SESSION UPDATE - January 15, 2026
+## VERSION HISTORY
 
-### BUG FIXED: 409 Duplicate Contact Handling
+### v0.4.0 - January 27, 2026
+- Added auto-advancing sync state via `sync_state.json`
+- Each run saves latest purchase date for next run
+- 303+ deals successfully synced to HubSpot
 
-**Problem**: The HubSpot SDK doesn't consistently set `error.statusCode`. The 409 conflict was appearing in `error.message` as "HTTP-Code: 409" but not in `error.statusCode`.
+### v0.3.0 - January 5, 2026
+- Added date-based filtering via `PURCHASE_CUTOFF_DATE`
 
-**Solution**: Updated `upsertHubSpotContact()` to check multiple places for the 409:
-```javascript
-const is409 = error.statusCode === 409 ||
-              error.code === 409 ||
-              error.message?.includes('409') ||
-              error.body?.status === 'error' && error.body?.message?.includes('already exists');
-```
-
-**Result**: Integration now properly updates existing contacts. Test run processed 17 purchases successfully.
+### v0.2.1 - January 5, 2026
+- Fixed 409 duplicate contact handling

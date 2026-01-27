@@ -138,13 +138,14 @@ Uses `exceljs` for Excel file operations.
 
 ### File Structure
 ```
-Sales Worksheet
-├── Date (Column A)
-├── Customer Name (Column B)
-├── Email (Column C)
-├── Product (Column D)
-├── Amount (Column E)
-└── Status (Column F)
+Sales Worksheet (sales_data.xlsx)
+├── Purchase ID (Column A) - Unique Kajabi purchase identifier
+├── Date (Column B)        - Purchase date (MM/DD/YYYY)
+├── Customer Name (Column C) - Full name
+├── Email (Column D)       - Customer email
+├── Product (Column E)     - Course/offer name
+├── Amount (Column F)      - Sale amount ($XX.XX)
+└── Status (Column G)      - completed or refunded
 ```
 
 ### Operations
@@ -159,15 +160,20 @@ await workbook.xlsx.readFile(filePath);
 ```javascript
 const worksheet = workbook.addWorksheet('Sales');
 worksheet.columns = [
+  { header: 'Purchase ID', key: 'purchase_id', width: 15 },
   { header: 'Date', key: 'date', width: 15 },
   { header: 'Customer Name', key: 'name', width: 25 },
-  // ... other columns
+  { header: 'Email', key: 'email', width: 30 },
+  { header: 'Product', key: 'product', width: 40 },
+  { header: 'Amount', key: 'amount', width: 12 },
+  { header: 'Status', key: 'status', width: 12 }
 ];
 ```
 
 #### Add Rows
 ```javascript
 worksheet.addRow({
+  purchase_id: '12345678',
   date: '01/03/2026',
   name: 'John Doe',
   email: 'john@example.com',

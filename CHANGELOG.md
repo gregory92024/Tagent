@@ -5,7 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.0] - 2026-01-05 (Current Release)
+## [0.4.0] - 2026-01-27 (Current Release)
+
+### Added
+- Auto-advancing cutoff date via `sync_state.json`
+- `loadSyncState()` function to read last processed purchase date
+- `saveSyncState()` function to save state after successful sync
+- Next run automatically uses saved cutoff instead of env var
+
+### Changed
+- Cutoff date now auto-advances after each successful sync
+- Falls back to `PURCHASE_CUTOFF_DATE` env var only on first run
+
+---
+
+## [0.3.0] - 2026-01-05
 
 ### Added
 - Date-based filtering for purchases via `PURCHASE_CUTOFF_DATE` environment variable
