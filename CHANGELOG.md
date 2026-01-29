@@ -5,7 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0] - 2026-01-27 (Current Release)
+## [1.1.1] - 2026-01-28 (Current Release)
+
+### Added
+- `EMAIL_AUTOMATION_SETUP.md` - Email automation configuration guide
+- `EMAIL_SETUP_TODO.md` - Email setup task tracking
+- `EMAIL_WORKFLOW_SYSTEM.md` - Email workflow documentation
+
+### Changed
+- Documentation reorganized per audit
+
+---
+
+## [1.1.0] - 2026-01-27
 
 ### Added
 - Incremental HubSpot sync using data hashing

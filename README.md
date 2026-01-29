@@ -59,6 +59,9 @@ CRM_integration/
 ├── README.md                 # This file
 ├── CLAUDE.md                 # Project guidelines
 ├── CHANGELOG.md              # Version history
+├── EMAIL_AUTOMATION_SETUP.md # Email automation configuration
+├── EMAIL_SETUP_TODO.md       # Email setup tasks
+├── EMAIL_WORKFLOW_SYSTEM.md  # Email workflow documentation
 └── venv/                     # Python virtual environment
 ```
 
