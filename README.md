@@ -169,7 +169,7 @@ For issues or questions:
 ## Related Projects
 
 - **[CRM_integration](../CRM_integration/)** - Python project for enriching HubSpot contacts with extended data
-- **[SYNC_RUN_ORDER.md](../SYNC_RUN_ORDER.md)** - Run order and scheduling between projects
+- **[SYNC_RUN_ORDER.md](../CRM_integration/SYNC_RUN_ORDER.md)** - Run order and scheduling between projects
 
 ## License
 
