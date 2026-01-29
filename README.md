@@ -115,7 +115,7 @@ HUBSPOT_CLIENT_SECRET=...
 
 ## Scheduling
 
-See [SYNC_RUN_ORDER.md](../SYNC_RUN_ORDER.md) for recommended run order between Agent and CRM_integration.
+See [SYNC_RUN_ORDER.md](./SYNC_RUN_ORDER.md) for recommended run order between Agent and CRM_integration.
 
 **Important:** Always run Agent first, then CRM_integration, to prevent Agent's basic contact data from overwriting enriched data.
 
@@ -123,7 +123,7 @@ See [SYNC_RUN_ORDER.md](../SYNC_RUN_ORDER.md) for recommended run order between 
 
 - **[CLAUDE.md](CLAUDE.md)** - Project guidelines and rules
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history
-- **[SYNC_RUN_ORDER.md](../SYNC_RUN_ORDER.md)** - Run order between projects
+- **[SYNC_RUN_ORDER.md](./SYNC_RUN_ORDER.md)** - Run order between projects
 
 ## Git Workflow
 

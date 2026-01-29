@@ -167,5 +167,5 @@ Before merging to main:
 
 - **[README.md](README.md)** - Main documentation and quick start
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history
-- **[SYNC_RUN_ORDER.md](../SYNC_RUN_ORDER.md)** - Run order between projects
+- **[SYNC_RUN_ORDER.md](./SYNC_RUN_ORDER.md)** - Run order between projects
 - **[Agent README](../Agent/README.md)** - Related Node.js project
