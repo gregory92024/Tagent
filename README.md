@@ -62,7 +62,8 @@ Agent/
 ├── USAGE.md              # Usage guide
 ├── API_DOCUMENTATION.md  # Technical reference
 ├── CHANGELOG.md          # Version history
-└── STATUS.md             # Current status
+├── STATUS.md             # Current status
+└── PRODUCT_CATALOG.md    # TeachCE product catalog
 ```
 
 ## Sync State Tracking

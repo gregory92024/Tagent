@@ -1,13 +1,13 @@
-# Project Status - January 27, 2026
+# Project Status - January 28, 2026
 
-## Current State: ✅ Production Ready (v0.4.0)
+## Current State: ✅ Production Ready (v0.4.1)
 
 ### System Overview
 Fully functional Kajabi → HubSpot → Excel integration with OAuth2 authentication, duplicate handling, and auto-advancing sync state.
 
 ### Active Configuration
 ```
-Version: 0.4.0
+Version: 0.4.1
 API Version: Kajabi API v1 (JSON:API format)
 Authentication: OAuth2 Client Credentials
 HubSpot: Personal Access Token (PAT)
@@ -44,12 +44,16 @@ HubSpot Deals: 303+
 - No manual date updates needed
 - **Status**: Active and working
 
-### Recent Changes (Jan 27, 2026)
+### Recent Changes (Jan 28, 2026)
+1. ✅ Documentation audit and reorganization (v0.4.1)
+2. ✅ Added PRODUCT_CATALOG.md to repo
+3. ✅ All doc links validated (11/11 valid)
+
+### Previous Changes (Jan 27, 2026)
 1. ✅ Added auto-advancing sync state (v0.4.0)
 2. ✅ `loadSyncState()` reads last processed date
 3. ✅ `saveSyncState()` saves after successful sync
 4. ✅ 303+ deals synced to HubSpot
-5. ✅ Updated all documentation
 
 ### Git Repository
 - **URL**: https://github.com/gregory92024/Tagent
@@ -96,7 +100,8 @@ Agent/
 ├── config.js              # Configuration loader
 ├── package.json           # Dependencies
 ├── sync_state.json        # Auto-advancing cutoff (gitignored)
-└── sales_data.xlsx        # Generated output (gitignored)
+├── sales_data.xlsx        # Generated output (gitignored)
+└── PRODUCT_CATALOG.md     # TeachCE product catalog
 ```
 
 ### Maintenance Notes
@@ -107,14 +112,18 @@ Agent/
 
 ---
 
-**Last Updated**: January 27, 2026
+**Last Updated**: January 28, 2026
 **Updated By**: Claude Code
-**Version**: 0.4.0
+**Version**: 0.4.1
 **Status**: Fully Operational - All systems running
 
 ---
 
 ## VERSION HISTORY
+
+### v0.4.1 - January 28, 2026
+- Documentation audit and reorganization
+- Added PRODUCT_CATALOG.md to repo
 
 ### v0.4.0 - January 27, 2026
 - Added auto-advancing sync state via `sync_state.json`
