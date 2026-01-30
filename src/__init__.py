@@ -5,6 +5,7 @@ from .kajabi_client import KajabiClient
 from .hubspot_client import HubSpotClient
 from .excel_sync import ExcelSync
 from .sync_pipeline import SyncPipeline
+from .email_workflow import EmailWorkflow
 
 __version__ = "1.0.0"
-__all__ = ["KajabiClient", "HubSpotClient", "ExcelSync", "SyncPipeline"]
+__all__ = ["KajabiClient", "HubSpotClient", "ExcelSync", "SyncPipeline", "EmailWorkflow"]

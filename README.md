@@ -31,6 +31,10 @@ python run.py
 python run.py --kajabi-only    # Sync Kajabi → Excel only
 python run.py --hubspot-only   # Sync Excel → HubSpot only
 python run.py --setup          # Setup HubSpot custom properties
+
+# Email renewal workflow
+python run.py --renewal-status # Show renewal status summary
+python run.py --renewal-list   # Show all renewal candidates
 ```
 
 ## File Structure
@@ -42,6 +46,7 @@ CRM_integration/
 │   ├── kajabi_client.py      # Kajabi API client (OAuth2)
 │   ├── hubspot_client.py     # HubSpot API client
 │   ├── excel_sync.py         # Excel read/write operations
+│   ├── email_workflow.py     # Renewal candidate identification
 │   └── sync_pipeline.py      # Main orchestration
 ├── data/
 │   ├── sales_tracking.xlsx   # Master subscriber list

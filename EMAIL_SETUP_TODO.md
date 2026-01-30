@@ -15,6 +15,11 @@
 - [x] Create EMAIL_WORKFLOW_SYSTEM.md
 - [x] Create EMAIL_AUTOMATION_SETUP.md
 - [x] Create this to-do tracker
+- [x] **Implement `src/email_workflow.py` module** (2026-01-30)
+  - Renewal candidate identification (18-24 months since payment)
+  - Exclusion logic (no email, COMPETITOR, DON'T SEND MARKETING)
+  - CLI commands: `--renewal-status` and `--renewal-list`
+  - Initial run: 189 candidates identified from 1,770 records
 
 ---
 
@@ -95,7 +100,8 @@
 | `EMAIL_WORKFLOW_SYSTEM.md` | Rules & definitions | Done |
 | `EMAIL_AUTOMATION_SETUP.md` | Configuration guide | Done |
 | `EMAIL_SETUP_TODO.md` | This tracker | Active |
+| `src/email_workflow.py` | Renewal candidate identification | Done |
 
 ---
 
-*Last Updated: 2026-01-11*
+*Last Updated: 2026-01-30*

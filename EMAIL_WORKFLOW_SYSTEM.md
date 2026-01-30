@@ -124,14 +124,61 @@ Examples:
 
 ---
 
-## 7. TASK INSTRUCTIONS FOR CLAUDE
+## 7. CLI COMMANDS
+
+The email workflow is now implemented in `src/email_workflow.py` with CLI access via `run.py`:
+
+```bash
+# Show renewal status summary (counts only)
+python run.py --renewal-status
+
+# Show all renewal candidates with details
+python run.py --renewal-list
+```
+
+### Renewal Window Configuration
+- **Renewal Cycle**: 24 months (2 years)
+- **Reminder Window**: 18-24 months after payment (6 months before renewal)
+- **Exclusions**: No email, COMPETITOR flag, DON'T SEND MARKETING flag
+
+### Sample Output (--renewal-status)
+```
+============================================================
+RENEWAL REMINDER REPORT
+============================================================
+Generated: 2026-01-30 00:53
+
+Renewal Window: Payment between 2024-01-30 and 2024-07-30
+(18-24 months since payment)
+
+----------------------------------------
+STATUS SUMMARY
+----------------------------------------
+Total records:             1770
+Renewal candidates:         189
+Lapsed (>24 months):       1224
+Current (<18 months):       112
+No payment date:             26
+
+----------------------------------------
+EXCLUSIONS
+----------------------------------------
+No email address:           219
+Competitor:                   0
+Marketing opt-out:            0
+```
+
+---
+
+## 8. TASK INSTRUCTIONS FOR CLAUDE
 
 ### Task: Generate Renewal List
 ```
-1. Open the Excel file at the source path
-2. Filter for Payment dates older than 11 months from today
-3. Exclude any records matching exclusion rules
-4. Return list with: Name, Email, Last Payment Date, Credits, Specialty
+1. Run: python run.py --renewal-list
+2. Or use EmailWorkflow class directly:
+   from src.email_workflow import EmailWorkflow
+   workflow = EmailWorkflow()
+   candidates = workflow.get_renewal_candidates()
 ```
 
 ### Task: Log New Activity
@@ -153,15 +200,14 @@ Examples:
 
 ### Task: Weekly Status Report
 ```
-1. Count total active subscribers (Payment date within 12 months)
-2. Count subscribers due for renewal (11-12 months)
-3. Count inactive subscribers (18+ months)
-4. List any pending certificate holds
+1. Run: python run.py --renewal-status
+2. Review counts for renewal candidates and exclusions
+3. Check for any pending certificate holds manually
 ```
 
 ---
 
-## 8. SCALING NOTES
+## 9. SCALING NOTES
 
 This system is designed to scale. As new subscribers are added:
 - They will follow the same column structure
@@ -171,15 +217,16 @@ This system is designed to scale. As new subscribers are added:
 
 ---
 
-## 9. VERSION HISTORY
+## 10. VERSION HISTORY
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-01-30 | 1.1 | Added CLI commands (`--renewal-status`, `--renewal-list`), implemented `src/email_workflow.py` |
 | 2026-01-11 | 1.0 | Initial system documentation created |
 
 ---
 
-## 10. QUICK REFERENCE
+## 11. QUICK REFERENCE
 
 **Source File**: `/mnt/c/Users/Gregory/OneDrive/Desktop/CRM_integration/data/sales_tracking.xlsx`
 **Email Platform**: Outlook

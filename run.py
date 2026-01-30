@@ -7,11 +7,14 @@ Usage:
     python run.py --setup            # Setup HubSpot properties only
     python run.py --kajabi-only      # Sync Kajabi to Excel only
     python run.py --hubspot-only     # Sync Excel to HubSpot only
+    python run.py --renewal-status   # Show renewal status summary
+    python run.py --renewal-list     # Show all renewal candidates
 """
 
 import sys
 import argparse
 from src.sync_pipeline import SyncPipeline
+from src.email_workflow import EmailWorkflow
 
 
 def main():
@@ -27,9 +30,28 @@ def main():
     parser.add_argument(
         "--hubspot-only", action="store_true", help="Sync Excel to HubSpot only"
     )
+    parser.add_argument(
+        "--renewal-status", action="store_true", help="Show renewal status summary counts"
+    )
+    parser.add_argument(
+        "--renewal-list", action="store_true", help="Show all renewal candidates with details"
+    )
 
     args = parser.parse_args()
 
+    # Handle renewal workflow commands
+    if args.renewal_status:
+        workflow = EmailWorkflow()
+        workflow.generate_renewal_report(verbose=True)
+        return
+
+    if args.renewal_list:
+        workflow = EmailWorkflow()
+        workflow.generate_renewal_report(verbose=True)
+        workflow.print_candidate_list()
+        return
+
+    # Handle sync commands
     pipeline = SyncPipeline()
 
     if args.setup:
