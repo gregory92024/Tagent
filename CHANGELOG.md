@@ -5,7 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2026-01-30 (Current Release)
+## [1.3.0] - 2026-01-30 (Current Release)
+
+### Added
+- **Email Tracking System** (Phase 2)
+  - `src/email_tracking.py` - New EmailTracker class for tracking reminder status
+  - `data/email_tracking.json` - JSON storage for tracking data
+  - `templates/renewal_reminder.txt` - Email template with personalization placeholders
+  - `renewal_cron.sh` - Daily cron script for automated renewal checks
+  - `setup_renewal_cron.sh` - Helper script to install cron job
+
+- **Escalating Reminder Sequence**
+  - Reminder 1: 18+ months after payment (6 months before renewal)
+  - Reminder 2: 21+ months after payment (3 months before renewal)
+  - Reminder 3: 23+ months after payment (1 month before renewal)
+
+- **New CLI Commands**
+  - `--renewal-check` - Daily check: shows conversions + due reminders
+  - `--renewal-send` - Preview emails ready to send with personalized content
+  - `--mark-sent ID` - Mark email as sent for subscriber
+  - `--mark-response ID` - Mark response received from subscriber
+
+- **Conversion Detection**
+  - Tracks contact status: pending → responded → converted → lapsed
+  - Kajabi integration for detecting new purchases by tracked contacts
+
+### Changed
+- Updated `src/__init__.py` to export `EmailTracker` class
+- Bumped version to 1.1.0 in package
+- Extended `EmailWorkflow` class with conversion/reminder logic
+
+### Technical Notes
+- 189 renewal candidates automatically added to tracking on first check
+- Tracking persists across sessions in JSON format
+- Cron job runs daily at 6:00 AM, logs to `logs/renewal_cron.log`
+
+---
+
+## [1.2.0] - 2026-01-30
 
 ### Added
 - `src/email_workflow.py` - New module for renewal candidate identification

@@ -35,6 +35,10 @@ python run.py --setup          # Setup HubSpot custom properties
 # Email renewal workflow
 python run.py --renewal-status # Show renewal status summary
 python run.py --renewal-list   # Show all renewal candidates
+python run.py --renewal-check  # Daily check: conversions + due reminders
+python run.py --renewal-send   # Preview emails ready to send
+python run.py --mark-sent ID   # Mark email as sent for subscriber
+python run.py --mark-response ID  # Mark response received
 ```
 
 ## File Structure
@@ -47,17 +51,24 @@ CRM_integration/
 │   ├── hubspot_client.py     # HubSpot API client
 │   ├── excel_sync.py         # Excel read/write operations
 │   ├── email_workflow.py     # Renewal candidate identification
+│   ├── email_tracking.py     # Email reminder tracking system
 │   └── sync_pipeline.py      # Main orchestration
 ├── data/
 │   ├── sales_tracking.xlsx   # Master subscriber list
 │   ├── last_sync.json        # Kajabi sync timestamp
-│   └── hubspot_sync_state.json  # Contact sync hashes (auto-created)
+│   ├── hubspot_sync_state.json  # Contact sync hashes (auto-created)
+│   └── email_tracking.json   # Email reminder tracking data
+├── templates/
+│   └── renewal_reminder.txt  # Email template with placeholders
 ├── logs/
 │   ├── sync.log              # Operation logs
-│   └── invalid_emails.log    # Invalid email tracking
+│   ├── invalid_emails.log    # Invalid email tracking
+│   └── renewal_cron.log      # Daily renewal check logs
 ├── run.py                    # CLI entry point
 ├── sync.sh                   # Bash automation wrapper
 ├── setup_cron.sh             # Cron job configuration
+├── renewal_cron.sh           # Daily renewal check script
+├── setup_renewal_cron.sh     # Renewal cron setup helper
 ├── requirements.txt          # Python dependencies
 ├── .env                      # Credentials (gitignored)
 ├── .env.example              # Credential template

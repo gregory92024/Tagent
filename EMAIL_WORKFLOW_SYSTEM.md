@@ -126,7 +126,7 @@ Examples:
 
 ## 7. CLI COMMANDS
 
-The email workflow is now implemented in `src/email_workflow.py` with CLI access via `run.py`:
+The email workflow is implemented in `src/email_workflow.py` and `src/email_tracking.py` with CLI access via `run.py`:
 
 ```bash
 # Show renewal status summary (counts only)
@@ -134,12 +134,36 @@ python run.py --renewal-status
 
 # Show all renewal candidates with details
 python run.py --renewal-list
+
+# Daily check: conversions + due reminders (run this daily)
+python run.py --renewal-check
+
+# Preview emails ready to send with personalized content
+python run.py --renewal-send
+
+# Mark email as sent for subscriber (after manually sending)
+python run.py --mark-sent 1525.0
+
+# Mark response received from subscriber
+python run.py --mark-response 1362.0
 ```
 
 ### Renewal Window Configuration
 - **Renewal Cycle**: 24 months (2 years)
 - **Reminder Window**: 18-24 months after payment (6 months before renewal)
 - **Exclusions**: No email, COMPETITOR flag, DON'T SEND MARKETING flag
+
+### Escalating Reminder Schedule
+| Reminder | Timing | Months After Payment |
+|----------|--------|---------------------|
+| 1st | 6 months before renewal | 18 months |
+| 2nd | 3 months before renewal | 21 months |
+| 3rd | 1 month before renewal | 23 months |
+
+**Logic**: Only send next reminder if:
+- Previous reminder was sent
+- No response recorded
+- No conversion (new payment) detected
 
 ### Sample Output (--renewal-status)
 ```
@@ -166,6 +190,91 @@ EXCLUSIONS
 No email address:           219
 Competitor:                   0
 Marketing opt-out:            0
+```
+
+---
+
+## 7A. EMAIL TRACKING SYSTEM
+
+### Storage File
+```
+Path: /mnt/c/Users/Gregory/OneDrive/Desktop/CRM_integration/data/email_tracking.json
+```
+
+### Data Structure
+```json
+{
+  "contacts": {
+    "subscriber_123": {
+      "email": "user@example.com",
+      "payment_date": "2024-02-08",
+      "reminder_1_sent": "2026-01-30",
+      "reminder_2_sent": null,
+      "reminder_3_sent": null,
+      "status": "pending",
+      "response_date": null,
+      "conversion_date": null
+    }
+  },
+  "last_check": "2026-01-30T06:00:00"
+}
+```
+
+### Contact Status Values
+| Status | Description |
+|--------|-------------|
+| `pending` | Active in reminder queue |
+| `responded` | Contact replied to email |
+| `converted` | Made a new purchase |
+| `lapsed` | Did not renew after all reminders |
+
+### Email Template
+Located at: `templates/renewal_reminder.txt`
+
+**Available placeholders:**
+- `{first_name}` - Contact first name
+- `{last_name}` - Contact last name
+- `{email}` - Email address
+- `{subscriber_id}` - Subscriber ID
+- `{payment_date}` - Last payment date (formatted)
+- `{courses_ordered}` - Courses from last order
+- `{renewal_deadline}` - Calculated renewal deadline
+
+### Daily Cron Job
+```bash
+# Setup cron job (runs daily at 6:00 AM)
+./setup_renewal_cron.sh
+
+# Manual test
+./renewal_cron.sh
+
+# View logs
+cat logs/renewal_cron.log
+```
+
+### Data Flow
+```
+                    Daily Cron Job
+                          │
+                          ▼
+┌─────────────────────────────────────────────────┐
+│  1. Load email_tracking.json                    │
+│  2. Check Kajabi for new purchases              │
+│  3. Mark conversions in tracking                │
+│  4. Calculate who needs reminder (18/21/23 mo)  │
+│  5. Cross-reference with tracking (sent status) │
+│  6. Generate "due for email" list               │
+│  7. Save tracking state                         │
+└─────────────────────────────────────────────────┘
+                          │
+                          ▼
+            Console Report / Log File
+                          │
+                          ▼
+         Manual: Review + Send via Outlook
+                          │
+                          ▼
+         python run.py --mark-sent {ID}
 ```
 
 ---
@@ -221,6 +330,7 @@ This system is designed to scale. As new subscribers are added:
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-01-30 | 1.2 | Phase 2: Added email tracking system, escalating reminders, conversion detection, new CLI commands (`--renewal-check`, `--renewal-send`, `--mark-sent`, `--mark-response`), cron automation |
 | 2026-01-30 | 1.1 | Added CLI commands (`--renewal-status`, `--renewal-list`), implemented `src/email_workflow.py` |
 | 2026-01-11 | 1.0 | Initial system documentation created |
 
@@ -229,8 +339,12 @@ This system is designed to scale. As new subscribers are added:
 ## 11. QUICK REFERENCE
 
 **Source File**: `/mnt/c/Users/Gregory/OneDrive/Desktop/CRM_integration/data/sales_tracking.xlsx`
-**Email Platform**: Outlook
+**Tracking File**: `/mnt/c/Users/Gregory/OneDrive/Desktop/CRM_integration/data/email_tracking.json`
+**Email Template**: `/mnt/c/Users/Gregory/OneDrive/Desktop/CRM_integration/templates/renewal_reminder.txt`
+**Email Platform**: Outlook (manual send, response tracking via CLI)
 **Active Staff**: GH, DH, TS
 **Primary Email Column**: P (Email)
 **Last Activity Column**: R (Courses Ordered)
 **Payment Date Column**: M (Payment)
+**Daily Cron**: `./renewal_cron.sh` (runs at 6:00 AM)
+**Cron Log**: `logs/renewal_cron.log`

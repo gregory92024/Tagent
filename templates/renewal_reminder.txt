@@ -1,0 +1,35 @@
+Subject: Your TeachCE Certification Renewal - Action Required
+
+Dear {first_name},
+
+This is a friendly reminder that your continuing education certification is approaching its renewal deadline.
+
+ACCOUNT DETAILS
+---------------
+Last Purchase: {payment_date}
+Courses Ordered: {courses_ordered}
+Renewal Deadline: {renewal_deadline}
+
+CERTIFICATION REQUIREMENTS
+--------------------------
+To maintain your professional certification, you must complete your continuing education renewal by {renewal_deadline}. Failure to renew by this date may result in your certification lapsing.
+
+TAKE ACTION NOW
+---------------
+Visit our website to review available courses and complete your renewal requirements. We offer a variety of courses to help you meet your certification needs.
+
+QUESTIONS?
+----------
+If you have any questions about your renewal requirements or need assistance selecting courses, please don't hesitate to contact us:
+
+Phone: [PHONE NUMBER]
+Email: [SUPPORT EMAIL]
+
+We're here to help ensure you maintain your professional certification without interruption.
+
+Best regards,
+The TeachCE Team
+
+---
+This email was sent to {email} regarding your TeachCE account.
+Subscriber ID: {subscriber_id}

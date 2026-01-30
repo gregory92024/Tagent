@@ -9,12 +9,17 @@ Usage:
     python run.py --hubspot-only     # Sync Excel to HubSpot only
     python run.py --renewal-status   # Show renewal status summary
     python run.py --renewal-list     # Show all renewal candidates
+    python run.py --renewal-check    # Daily check: conversions + due reminders
+    python run.py --renewal-send     # Preview emails ready to send
+    python run.py --mark-sent ID     # Mark email as sent for subscriber
+    python run.py --mark-response ID # Mark response received from subscriber
 """
 
 import sys
 import argparse
 from src.sync_pipeline import SyncPipeline
 from src.email_workflow import EmailWorkflow
+from src.email_tracking import EmailTracker
 
 
 def main():
@@ -36,6 +41,18 @@ def main():
     parser.add_argument(
         "--renewal-list", action="store_true", help="Show all renewal candidates with details"
     )
+    parser.add_argument(
+        "--renewal-check", action="store_true", help="Daily check: conversions + due reminders"
+    )
+    parser.add_argument(
+        "--renewal-send", action="store_true", help="Preview emails ready to send"
+    )
+    parser.add_argument(
+        "--mark-sent", type=str, metavar="ID", help="Mark email as sent for subscriber ID"
+    )
+    parser.add_argument(
+        "--mark-response", type=str, metavar="ID", help="Mark response received from subscriber ID"
+    )
 
     args = parser.parse_args()
 
@@ -49,6 +66,76 @@ def main():
         workflow = EmailWorkflow()
         workflow.generate_renewal_report(verbose=True)
         workflow.print_candidate_list()
+        return
+
+    if args.renewal_check:
+        workflow = EmailWorkflow()
+        # Run daily check (without Kajabi conversion check for now)
+        results = workflow.run_daily_check(kajabi_client=None)
+        workflow.print_daily_check_report(results)
+        return
+
+    if args.renewal_send:
+        workflow = EmailWorkflow()
+        tracker = EmailTracker()
+        previews = workflow.preview_emails(tracker)
+
+        print("\n" + "=" * 60)
+        print("EMAILS READY TO SEND")
+        print("=" * 60)
+
+        if not previews:
+            print("No emails due at this time.")
+        else:
+            for i, p in enumerate(previews, 1):
+                print(f"\n--- Email #{i} (Reminder {p['reminder_num']}) ---")
+                print(f"To: {p['email_address']}")
+                print(f"Subscriber ID: {p['subscriber_id']}")
+                print("-" * 40)
+                # Show first 500 chars of email content
+                content = p['email_content'][:500]
+                if len(p['email_content']) > 500:
+                    content += "\n... [truncated]"
+                print(content)
+                print()
+
+            print(f"\nTotal: {len(previews)} emails ready to send")
+            print("Use --mark-sent <ID> after sending each email manually")
+        return
+
+    if args.mark_sent:
+        tracker = EmailTracker()
+        subscriber_id = args.mark_sent
+
+        # Get current status to determine which reminder to mark
+        contact = tracker.get_contact_status(subscriber_id)
+
+        if contact is None:
+            print(f"Error: Subscriber {subscriber_id} not found in tracking")
+            sys.exit(1)
+
+        next_reminder = tracker.get_next_reminder_num(subscriber_id)
+
+        if next_reminder is None:
+            print(f"Subscriber {subscriber_id}: All reminders already sent or contact not pending")
+            return
+
+        if tracker.record_email_sent(subscriber_id, next_reminder):
+            print(f"Marked reminder {next_reminder} as sent for subscriber {subscriber_id}")
+        else:
+            print(f"Error: Could not mark email sent for {subscriber_id}")
+            sys.exit(1)
+        return
+
+    if args.mark_response:
+        tracker = EmailTracker()
+        subscriber_id = args.mark_response
+
+        if tracker.record_response(subscriber_id):
+            print(f"Marked response received for subscriber {subscriber_id}")
+        else:
+            print(f"Error: Subscriber {subscriber_id} not found in tracking")
+            sys.exit(1)
         return
 
     # Handle sync commands

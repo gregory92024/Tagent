@@ -3,13 +3,18 @@ Email Workflow Module
 Identifies renewal candidates and manages email workflow logic
 """
 
+import os
 import re
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import pandas as pd
 
 from .excel_sync import ExcelSync
+from .email_tracking import EmailTracker
+
+if TYPE_CHECKING:
+    from .kajabi_client import KajabiClient
 
 
 class EmailWorkflow:
@@ -25,6 +30,14 @@ class EmailWorkflow:
     RENEWAL_CYCLE_MONTHS = 24  # 2 years
     REMINDER_MONTHS_BEFORE = 6  # Send reminder 6 months before renewal
     REMINDER_START_MONTHS = 18  # 24 - 6 = 18 months after payment
+
+    # Escalating reminder schedule (months after payment)
+    REMINDER_1_MONTHS = 18  # 6 months before renewal
+    REMINDER_2_MONTHS = 21  # 3 months before renewal
+    REMINDER_3_MONTHS = 23  # 1 month before renewal
+
+    # Template file location
+    TEMPLATE_FILE = "templates/renewal_reminder.txt"
 
     def __init__(self, excel_sync: Optional[ExcelSync] = None):
         self.excel = excel_sync or ExcelSync()
@@ -306,6 +319,306 @@ class EmailWorkflow:
 
         print("-" * 80)
         print(f"Total candidates: {len(candidates)}")
+
+    def check_conversions(self, kajabi_client: "KajabiClient", tracker: EmailTracker) -> list:
+        """
+        Check if any tracked contacts made new purchases in Kajabi.
+
+        Args:
+            kajabi_client: Authenticated Kajabi client
+            tracker: EmailTracker instance
+
+        Returns:
+            List of conversions detected (subscriber_id, payment_date)
+        """
+        conversions = []
+        tracked = tracker.get_all_tracked()
+
+        if not tracked:
+            return conversions
+
+        # Get recent Kajabi purchases (last 30 days as a reasonable window)
+        try:
+            since = datetime.now() - relativedelta(days=30)
+            recent_purchases = kajabi_client.get_orders(since=since, limit=200)
+        except Exception as e:
+            print(f"Warning: Could not fetch Kajabi purchases: {e}")
+            return conversions
+
+        # Build lookup of tracked emails
+        email_to_subscriber = {}
+        for subscriber_id, contact in tracked.items():
+            if contact.get("status") == "pending":
+                email = contact.get("email", "").lower()
+                if email:
+                    email_to_subscriber[email] = subscriber_id
+
+        # Check each recent purchase against tracked contacts
+        for purchase in recent_purchases:
+            # Get customer email from purchase
+            # Note: May need to fetch customer details separately
+            customer_email = purchase.get("email", "").lower()
+
+            if customer_email in email_to_subscriber:
+                subscriber_id = email_to_subscriber[customer_email]
+                payment_date = purchase.get("created_at", "")[:10]  # Extract date portion
+
+                # Record conversion
+                tracker.record_conversion(subscriber_id, payment_date)
+                conversions.append({
+                    "subscriber_id": subscriber_id,
+                    "email": customer_email,
+                    "payment_date": payment_date,
+                })
+
+        return conversions
+
+    def get_reminder_threshold(self, reminder_num: int) -> int:
+        """Get months since payment threshold for a reminder number."""
+        thresholds = {
+            1: self.REMINDER_1_MONTHS,  # 18 months
+            2: self.REMINDER_2_MONTHS,  # 21 months
+            3: self.REMINDER_3_MONTHS,  # 23 months
+        }
+        return thresholds.get(reminder_num, 18)
+
+    def get_due_reminders(self, tracker: EmailTracker) -> list:
+        """
+        Get contacts due for their next reminder based on payment date and tracking.
+
+        Logic:
+        - Reminder 1: 18+ months since payment, reminder 1 not sent
+        - Reminder 2: 21+ months since payment, reminder 1 sent, reminder 2 not sent
+        - Reminder 3: 23+ months since payment, reminder 2 sent, reminder 3 not sent
+
+        Args:
+            tracker: EmailTracker instance
+
+        Returns:
+            List of dicts with contact info and which reminder is due
+        """
+        due_reminders = []
+        today = datetime.now()
+
+        # Get all renewal candidates from spreadsheet
+        candidates = self.get_renewal_candidates()
+
+        for candidate in candidates:
+            subscriber_id = str(candidate.get("subscriber_id"))
+            payment_date = candidate.get("payment_date")
+            months_since = candidate.get("months_since_payment", 0)
+
+            # Get or create tracking record
+            contact_status = tracker.get_contact_status(subscriber_id)
+
+            if contact_status:
+                # Skip if already responded or converted
+                if contact_status.get("status") in ("responded", "converted", "lapsed"):
+                    continue
+
+                # Determine next reminder
+                next_reminder = tracker.get_next_reminder_num(subscriber_id)
+            else:
+                # New contact, add to tracking
+                tracker.add_contact(
+                    subscriber_id=subscriber_id,
+                    email=candidate.get("email", ""),
+                    payment_date=payment_date.strftime("%Y-%m-%d") if payment_date else None
+                )
+                next_reminder = 1
+                contact_status = tracker.get_contact_status(subscriber_id)
+
+            if not next_reminder:
+                continue
+
+            # Check if enough time has passed for this reminder
+            threshold_months = self.get_reminder_threshold(next_reminder)
+
+            if months_since >= threshold_months:
+                due_reminders.append({
+                    "subscriber_id": subscriber_id,
+                    "name": candidate.get("name", ""),
+                    "last_name": candidate.get("last_name", ""),
+                    "email": candidate.get("email", ""),
+                    "payment_date": payment_date,
+                    "months_since_payment": months_since,
+                    "courses_ordered": candidate.get("courses_ordered", ""),
+                    "reminder_num": next_reminder,
+                    "reminder_1_sent": contact_status.get("reminder_1_sent") if contact_status else None,
+                    "reminder_2_sent": contact_status.get("reminder_2_sent") if contact_status else None,
+                })
+
+        return due_reminders
+
+    def load_email_template(self) -> str:
+        """
+        Load the email template from file.
+
+        Returns:
+            Template string or default if file not found
+        """
+        if os.path.exists(self.TEMPLATE_FILE):
+            with open(self.TEMPLATE_FILE, "r") as f:
+                return f.read()
+
+        # Default template
+        return """Subject: Your TeachCE Certification Renewal
+
+Dear {first_name},
+
+Your continuing education credits are due for renewal. Your last order was on {payment_date} for {courses_ordered}.
+
+To maintain your certification, you'll need to complete your renewal by {renewal_deadline}.
+
+Questions? Contact us for assistance.
+
+Best regards,
+TeachCE Team
+"""
+
+    def generate_email(self, contact: dict) -> str:
+        """
+        Generate a personalized email from template.
+
+        Args:
+            contact: Dict with contact details (from get_due_reminders)
+
+        Returns:
+            Filled email template string
+        """
+        template = self.load_email_template()
+
+        # Calculate renewal deadline (24 months from payment)
+        payment_date = contact.get("payment_date")
+        if isinstance(payment_date, datetime):
+            renewal_deadline = payment_date + relativedelta(months=self.RENEWAL_CYCLE_MONTHS)
+            payment_str = payment_date.strftime("%B %d, %Y")
+            deadline_str = renewal_deadline.strftime("%B %d, %Y")
+        else:
+            payment_str = str(payment_date) if payment_date else "N/A"
+            deadline_str = "N/A"
+
+        # Fill in template
+        email = template.format(
+            first_name=contact.get("name", "Valued Customer"),
+            last_name=contact.get("last_name", ""),
+            email=contact.get("email", ""),
+            subscriber_id=contact.get("subscriber_id", ""),
+            payment_date=payment_str,
+            courses_ordered=contact.get("courses_ordered", "N/A") or "N/A",
+            renewal_deadline=deadline_str,
+        )
+
+        return email
+
+    def run_daily_check(self, kajabi_client: Optional["KajabiClient"] = None) -> dict:
+        """
+        Run the daily renewal check.
+
+        Steps:
+        1. Load tracking data
+        2. Check for conversions (if Kajabi client provided)
+        3. Identify contacts due for reminders
+        4. Generate report
+        5. Save updated tracking state
+
+        Args:
+            kajabi_client: Optional Kajabi client for conversion checking
+
+        Returns:
+            Dict with check results
+        """
+        tracker = EmailTracker()
+
+        results = {
+            "timestamp": datetime.now().isoformat(),
+            "conversions": [],
+            "due_reminders": [],
+            "stats": {},
+        }
+
+        # Check for conversions if Kajabi client available
+        if kajabi_client:
+            try:
+                conversions = self.check_conversions(kajabi_client, tracker)
+                results["conversions"] = conversions
+            except Exception as e:
+                print(f"Warning: Conversion check failed: {e}")
+
+        # Get contacts due for reminders
+        due_reminders = self.get_due_reminders(tracker)
+        results["due_reminders"] = due_reminders
+
+        # Update stats
+        results["stats"] = tracker.get_stats()
+
+        # Update last check timestamp
+        tracker.update_last_check()
+
+        return results
+
+    def print_daily_check_report(self, results: dict) -> None:
+        """Print formatted daily check report."""
+        print("\n" + "=" * 60)
+        print("DAILY RENEWAL CHECK REPORT")
+        print("=" * 60)
+        print(f"Timestamp: {results['timestamp']}")
+
+        # Conversions
+        conversions = results.get("conversions", [])
+        print(f"\n--- CONVERSIONS DETECTED: {len(conversions)} ---")
+        if conversions:
+            for c in conversions:
+                print(f"  {c['subscriber_id']}: {c['email']} (paid {c['payment_date']})")
+
+        # Due reminders
+        due = results.get("due_reminders", [])
+        print(f"\n--- REMINDERS DUE: {len(due)} ---")
+        if due:
+            print(f"{'ID':<8} {'Name':<25} {'Email':<30} {'Reminder'}")
+            print("-" * 75)
+            for r in due:
+                name = f"{r['name']} {r['last_name']}".strip()[:24]
+                print(f"{r['subscriber_id']:<8} {name:<25} {r['email']:<30} #{r['reminder_num']}")
+
+        # Stats
+        stats = results.get("stats", {})
+        print("\n--- TRACKING STATS ---")
+        print(f"Total tracked:    {stats.get('total_tracked', 0)}")
+        print(f"Pending:          {stats.get('pending', 0)}")
+        print(f"Responded:        {stats.get('responded', 0)}")
+        print(f"Converted:        {stats.get('converted', 0)}")
+        print(f"Lapsed:           {stats.get('lapsed', 0)}")
+        print(f"Reminder 1 sent:  {stats.get('reminder_1_sent', 0)}")
+        print(f"Reminder 2 sent:  {stats.get('reminder_2_sent', 0)}")
+        print(f"Reminder 3 sent:  {stats.get('reminder_3_sent', 0)}")
+
+    def preview_emails(self, tracker: Optional[EmailTracker] = None) -> list:
+        """
+        Preview emails that would be sent.
+
+        Args:
+            tracker: Optional EmailTracker (creates new if not provided)
+
+        Returns:
+            List of dicts with contact info and email content
+        """
+        if tracker is None:
+            tracker = EmailTracker()
+
+        due = self.get_due_reminders(tracker)
+        previews = []
+
+        for contact in due:
+            email_content = self.generate_email(contact)
+            previews.append({
+                "subscriber_id": contact["subscriber_id"],
+                "email_address": contact["email"],
+                "reminder_num": contact["reminder_num"],
+                "email_content": email_content,
+            })
+
+        return previews
 
 
 # Quick test when run directly
